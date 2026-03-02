@@ -6,8 +6,8 @@ const secret = process.env.FEISHU_SECRET;
 
 // ====== 你的持仓（自己改） ======
 const holdings = {
-  bitcoin: 0.5,
-  ethereum: 3,
+  bitcoin: 1.0,
+  ethereum: 10,
   solana: 20,
 };
 
