@@ -110,6 +110,17 @@ async function getChartBase64(coinId, days = 7) {
     for (let coin of topRotation) {
       const chartBase64 = await getChartBase64(coin.instId);
       if (!chartBase64) continue; // 避免空图表
+      
+      // 检查Base64字符串长度
+      console.log(`Chart Base64 length for ${coin.instId}: ${chartBase64.length}`);
+      
+      // 限制Base64字符串长度，避免超过飞书API限制
+      const maxLength = 100000; // 100KB
+      if (chartBase64.length > maxLength) {
+        console.log(`Chart Base64 for ${coin.instId} is too long, skipping`);
+        continue;
+      }
+      
       rotationCharts.push({
         tag: "img",
         img_key: coin.instId,
@@ -145,8 +156,22 @@ async function getChartBase64(coinId, days = 7) {
 
     // 发送飞书
     if (webhook) {
-      const response = await axios.post(webhook, JSON.stringify(body), { headers: { "Content-Type": "application/json; charset=utf-8" } });
-      console.log("Feishu response:", response.data);
+      // 检查body大小
+      const bodyString = JSON.stringify(body);
+      console.log(`Body length: ${bodyString.length}`);
+      
+      // 检查图片元素
+      console.log(`Number of image elements: ${rotationCharts.length}`);
+      
+      try {
+        const response = await axios.post(webhook, bodyString, { headers: { "Content-Type": "application/json; charset=utf-8" } });
+        console.log("Feishu response:", response.data);
+      } catch (error) {
+        console.error("Error sending Feishu message:", error.message);
+        if (error.response) {
+          console.error("Feishu error response:", error.response.data);
+        }
+      }
     } else {
       console.log("Webhook not set, skipping Feishu message sending");
       console.log("Core coins:", coreLines);
