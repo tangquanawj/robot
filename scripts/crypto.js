@@ -141,6 +141,9 @@ async function getChartBase64(coinId, days = 7) {
       // 检查图片元素
       console.log(`Number of image elements: ${rotationCharts.length}`);
       
+      // 添加延迟，避免飞书API频率限制
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       try {
         const response = await axios.post(webhook, bodyString, { headers: { "Content-Type": "application/json; charset=utf-8" } });
         console.log("Feishu response:", response.data);
