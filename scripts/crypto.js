@@ -105,36 +105,14 @@ async function getChartBase64(coinId, days = 7) {
     rotationData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
     const topRotation = rotationData.slice(0, 3);
 
-    // 生成图表Base64
+    // 暂时不生成图表，避免飞书API错误
     let rotationCharts = [];
-    for (let coin of topRotation) {
-      const chartBase64 = await getChartBase64(coin.instId);
-      if (!chartBase64) continue; // 避免空图表
-      
-      // 检查Base64字符串长度
-      console.log(`Chart Base64 length for ${coin.instId}: ${chartBase64.length}`);
-      
-      // 限制Base64字符串长度，避免超过飞书API限制
-      const maxLength = 100000; // 100KB
-      if (chartBase64.length > maxLength) {
-        console.log(`Chart Base64 for ${coin.instId} is too long, skipping`);
-        continue;
-      }
-      
-      rotationCharts.push({
-        tag: "img",
-        img_key: coin.instId,
-        alt: `${coin.instId} 7D Chart`,
-        img_url: `data:image/png;base64,${chartBase64}`
-      });
-    }
 
     // 构建元素
     const elements = [
       { tag: "div", text: { tag: "lark_md", content: "🔵 **核心监控池**\n" + coreLines.join("\n") } },
       { tag: "hr" },
       { tag: "div", text: { tag: "lark_md", content: "🟣 **轮动Top3池**\n" + topRotation.map(c => c.line).join("\n") } },
-      ...rotationCharts,
       { tag: "hr" },
       { tag: "div", text: { tag: "lark_md", content: `💰 持仓总价值: $${totalValue.toFixed(2)}` } },
       { tag: "div", text: { tag: "lark_md", content: alert || "✅ 波动正常" } }
