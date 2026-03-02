@@ -86,6 +86,10 @@ async function getBTCFundingRate() {
     return null;
   } catch (error) {
     console.error("Error fetching BTC funding rate:", error.message);
+    // 当遇到 451 错误时，返回一个明确的错误信息
+    if (error.response && error.response.status === 451) {
+      console.error("Binance API is unavailable for legal reasons. Skipping BTC funding rate.");
+    }
     return null;
   }
 }
