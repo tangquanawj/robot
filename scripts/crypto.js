@@ -13,21 +13,25 @@ const coinSymbols = {
   "binancecoin": "BNB",
   "ripple": "XRP",
   "cardano": "ADA",
+  "dogecoin": "DOGE",
+  "chainlink": "LINK",
+  "avalanche": "AVAX",
+  "polkadot": "DOT",
   "near": "NEAR",
   "arbitrum": "ARB",
   "aptos": "APT",
   "sui": "SUI",
   "render-token": "RNDR",
-  "polkadot": "DOT",
-  "chainlink": "LINK",
-  "avalanche": "AVAX",
+  "fetch-ai": "FET",
+  "injective": "INJ",
+  "optimism": "OP",
   "polygon": "MATIC",
   "cosmos": "ATOM"
 };
 
 // 核心币池和轮动币池
-const coreCoins = ["bitcoin", "ethereum", "solana", "binancecoin", "ripple", "cardano"];
-const rotationCoins = ["near", "arbitrum", "aptos", "sui", "render-token", "polkadot", "chainlink", "avalanche", "polygon", "cosmos"];
+const coreCoins = ["bitcoin", "ethereum", "ripple", "solana", "dogecoin", "cardano", "chainlink", "avalanche", "polkadot"];
+const rotationCoins = ["sui", "near", "aptos", "render-token", "arbitrum", "fetch-ai", "injective", "optimism", "polygon", "cosmos"];
 const allCoins = [...coreCoins, ...rotationCoins];
 
 // 持仓示例
