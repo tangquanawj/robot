@@ -32,15 +32,33 @@ function sign(timestamp) {
 
 (async () => {
   // ====== 获取行情 ======
-  const market = await fetch(
-    "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,solana"
-  );
+  let market = [];
+  try {
+    market = await fetch(
+      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,solana"
+    );
+    // 确保market是一个数组
+    if (!Array.isArray(market)) {
+      console.error("API返回的market不是数组:", market);
+      market = [];
+    }
+  } catch (error) {
+    console.error("获取行情失败:", error);
+    market = [];
+  }
 
   // ====== 获取恐慌贪婪指数 ======
-  const fear = await fetch("https://api.alternative.me/fng/");
-
-  const fearValue = fear.data[0].value;
-  const fearText = fear.data[0].value_classification;
+  let fearValue = "N/A";
+  let fearText = "N/A";
+  try {
+    const fear = await fetch("https://api.alternative.me/fng/");
+    if (fear && fear.data && fear.data[0]) {
+      fearValue = fear.data[0].value;
+      fearText = fear.data[0].value_classification;
+    }
+  } catch (error) {
+    console.error("获取恐慌贪婪指数失败:", error);
+  }
 
   let totalValue = 0;
   let alert = "";
