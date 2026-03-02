@@ -13,7 +13,7 @@ jobs:
       - name: Get Market Data
         id: market
         run: |
-          RESPONSE=$(curl -s "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,solana")
+          RESPONSE=$(curl -s "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,solana,binancecoin,cardano,polkadot,chainlink,litecoin,avalanche-2,matic-network")
 
           BTC_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="bitcoin") | .current_price')
           BTC_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="bitcoin") | .price_change_percentage_24h')
@@ -24,12 +24,47 @@ jobs:
           SOL_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="solana") | .current_price')
           SOL_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="solana") | .price_change_percentage_24h')
 
+          BNB_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="binancecoin") | .current_price')
+          BNB_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="binancecoin") | .price_change_percentage_24h')
+
+          ADA_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="cardano") | .current_price')
+          ADA_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="cardano") | .price_change_percentage_24h')
+
+          DOT_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="polkadot") | .current_price')
+          DOT_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="polkadot") | .price_change_percentage_24h')
+
+          LINK_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="chainlink") | .current_price')
+          LINK_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="chainlink") | .price_change_percentage_24h')
+
+          LTC_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="litecoin") | .current_price')
+          LTC_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="litecoin") | .price_change_percentage_24h')
+
+          AVAX_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="avalanche-2") | .current_price')
+          AVAX_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="avalanche-2") | .price_change_percentage_24h')
+
+          MATIC_PRICE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="matic-network") | .current_price')
+          MATIC_CHANGE=$(echo "$RESPONSE" | jq -r '.[] | select(.id=="matic-network") | .price_change_percentage_24h')
+
           echo "btc_price=$BTC_PRICE" >> $GITHUB_OUTPUT
           echo "btc_change=$BTC_CHANGE" >> $GITHUB_OUTPUT
           echo "eth_price=$ETH_PRICE" >> $GITHUB_OUTPUT
           echo "eth_change=$ETH_CHANGE" >> $GITHUB_OUTPUT
           echo "sol_price=$SOL_PRICE" >> $GITHUB_OUTPUT
           echo "sol_change=$SOL_CHANGE" >> $GITHUB_OUTPUT
+          echo "bnb_price=$BNB_PRICE" >> $GITHUB_OUTPUT
+          echo "bnb_change=$BNB_CHANGE" >> $GITHUB_OUTPUT
+          echo "ada_price=$ADA_PRICE" >> $GITHUB_OUTPUT
+          echo "ada_change=$ADA_CHANGE" >> $GITHUB_OUTPUT
+          echo "dot_price=$DOT_PRICE" >> $GITHUB_OUTPUT
+          echo "dot_change=$DOT_CHANGE" >> $GITHUB_OUTPUT
+          echo "link_price=$LINK_PRICE" >> $GITHUB_OUTPUT
+          echo "link_change=$LINK_CHANGE" >> $GITHUB_OUTPUT
+          echo "ltc_price=$LTC_PRICE" >> $GITHUB_OUTPUT
+          echo "ltc_change=$LTC_CHANGE" >> $GITHUB_OUTPUT
+          echo "avax_price=$AVAX_PRICE" >> $GITHUB_OUTPUT
+          echo "avax_change=$AVAX_CHANGE" >> $GITHUB_OUTPUT
+          echo "matic_price=$MATIC_PRICE" >> $GITHUB_OUTPUT
+          echo "matic_change=$MATIC_CHANGE" >> $GITHUB_OUTPUT
 
       - name: Send Card to Feishu
         run: |
@@ -57,11 +92,25 @@ jobs:
           const btc = formatLine("BTC", process.env.BTC_PRICE, process.env.BTC_CHANGE);
           const eth = formatLine("ETH", process.env.ETH_PRICE, process.env.ETH_CHANGE);
           const sol = formatLine("SOL", process.env.SOL_PRICE, process.env.SOL_CHANGE);
+          const bnb = formatLine("BNB", process.env.BNB_PRICE, process.env.BNB_CHANGE);
+          const ada = formatLine("ADA", process.env.ADA_PRICE, process.env.ADA_CHANGE);
+          const dot = formatLine("DOT", process.env.DOT_PRICE, process.env.DOT_CHANGE);
+          const link = formatLine("LINK", process.env.LINK_PRICE, process.env.LINK_CHANGE);
+          const ltc = formatLine("LTC", process.env.LTC_PRICE, process.env.LTC_CHANGE);
+          const avax = formatLine("AVAX", process.env.AVAX_PRICE, process.env.AVAX_CHANGE);
+          const matic = formatLine("MATIC", process.env.MATIC_PRICE, process.env.MATIC_CHANGE);
 
           let alertText = "";
           if (Math.abs(process.env.BTC_CHANGE) >= 5) alertText += "⚠ BTC 波动超过 5%\n";
           if (Math.abs(process.env.ETH_CHANGE) >= 5) alertText += "⚠ ETH 波动超过 5%\n";
           if (Math.abs(process.env.SOL_CHANGE) >= 5) alertText += "⚠ SOL 波动超过 5%\n";
+          if (Math.abs(process.env.BNB_CHANGE) >= 5) alertText += "⚠ BNB 波动超过 5%\n";
+          if (Math.abs(process.env.ADA_CHANGE) >= 5) alertText += "⚠ ADA 波动超过 5%\n";
+          if (Math.abs(process.env.DOT_CHANGE) >= 5) alertText += "⚠ DOT 波动超过 5%\n";
+          if (Math.abs(process.env.LINK_CHANGE) >= 5) alertText += "⚠ LINK 波动超过 5%\n";
+          if (Math.abs(process.env.LTC_CHANGE) >= 5) alertText += "⚠ LTC 波动超过 5%\n";
+          if (Math.abs(process.env.AVAX_CHANGE) >= 5) alertText += "⚠ AVAX 波动超过 5%\n";
+          if (Math.abs(process.env.MATIC_CHANGE) >= 5) alertText += "⚠ MATIC 波动超过 5%\n";
 
           const body = JSON.stringify({
             timestamp,
@@ -79,7 +128,7 @@ jobs:
                   tag: "div",
                   text: {
                     tag: "lark_md",
-                    content: `${btc}\n${eth}\n${sol}`
+                    content: `${btc}\n${eth}\n${sol}\n${bnb}\n${ada}\n${dot}\n${link}\n${ltc}\n${avax}\n${matic}`
                   }
                 },
                 {
@@ -125,3 +174,17 @@ jobs:
           ETH_CHANGE: ${{ steps.market.outputs.eth_change }}
           SOL_PRICE: ${{ steps.market.outputs.sol_price }}
           SOL_CHANGE: ${{ steps.market.outputs.sol_change }}
+          BNB_PRICE: ${{ steps.market.outputs.bnb_price }}
+          BNB_CHANGE: ${{ steps.market.outputs.bnb_change }}
+          ADA_PRICE: ${{ steps.market.outputs.ada_price }}
+          ADA_CHANGE: ${{ steps.market.outputs.ada_change }}
+          DOT_PRICE: ${{ steps.market.outputs.dot_price }}
+          DOT_CHANGE: ${{ steps.market.outputs.dot_change }}
+          LINK_PRICE: ${{ steps.market.outputs.link_price }}
+          LINK_CHANGE: ${{ steps.market.outputs.link_change }}
+          LTC_PRICE: ${{ steps.market.outputs.ltc_price }}
+          LTC_CHANGE: ${{ steps.market.outputs.ltc_change }}
+          AVAX_PRICE: ${{ steps.market.outputs.avax_price }}
+          AVAX_CHANGE: ${{ steps.market.outputs.avax_change }}
+          MATIC_PRICE: ${{ steps.market.outputs.matic_price }}
+          MATIC_CHANGE: ${{ steps.market.outputs.matic_change }}
