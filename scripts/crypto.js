@@ -6,15 +6,15 @@ const webhook = process.env.FEISHU_WEBHOOK;
 const secret = process.env.FEISHU_SECRET;
 
 // 核心币池和轮动币池
-const coreCoins = ["BTC-USDT-SWAP", "ETH-USDT-SWAP", "SOL-USDT-SWAP"];
-const rotationCoins = ["NEAR-USDT-SWAP", "ARB-USDT-SWAP", "APT-USDT-SWAP", "SUI-USDT-SWAP", "RNDR-USDT-SWAP"];
+const coreCoins = ["bitcoin", "ethereum", "solana"];
+const rotationCoins = ["near", "arbitrum", "aptos", "sui", "render-token"];
 const allCoins = [...coreCoins, ...rotationCoins];
 
 // 持仓示例
 const holdings = {
-  "BTC-USDT-SWAP": 0.5,
-  "ETH-USDT-SWAP": 2,
-  "SOL-USDT-SWAP": 10
+  "bitcoin": 0.5,
+  "ethereum": 2,
+  "solana": 10
 };
 
 // 飞书签名函数
@@ -23,36 +23,55 @@ function sign(timestamp) {
   return crypto.createHmac("sha256", stringToSign).update("").digest("base64");
 }
 
-// 获取 OKX 最新价格，只保留活跃合约
-async function getTicker(instId) {
+// 批量获取 CoinGecko 最新价格
+async function getTickers(coinIds) {
   try {
-    const res = await axios.get("https://www.okx.com/api/v5/market/ticker", { params: { instId } });
-    const data = res.data.data?.[0];
-    if (!data || data.instStatus !== "live") return null; // 仅保留活跃合约
-    const lastPrice = parseFloat(data.last);
-    const open24h = parseFloat(data.open24h);
-    const change = ((lastPrice - open24h) / open24h) * 100;
-    return { instId, lastPrice, change };
-  } catch {
-    return null; // 请求错误也返回 null
+    console.log(`Fetching data for ${coinIds.join(', ')}`);
+    const res = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
+      params: {
+        ids: coinIds.join(','),
+        vs_currencies: "usd",
+        include_24hr_change: true
+      },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+      }
+    });
+    console.log("Response:", res.data);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching tickers:", error.message);
+    return {};
   }
 }
 
-// 获取 OKX 7 日 K 线价格 Base64
-async function getChartBase64(instId, days = 7) {
+// 获取 CoinGecko 7 日 K 线价格 Base64
+async function getChartBase64(coinId, days = 7) {
   try {
-    const res = await axios.get("https://www.okx.com/api/v5/market/history-candles", { params: { instId, bar: "1d", limit: days } });
-    const prices = res.data.data?.map(item => parseFloat(item[4])) || [];
+    console.log(`Fetching chart data for ${coinId}`);
+    const res = await axios.get(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {
+      params: {
+        vs_currency: "usd",
+        days: days - 1, // CoinGecko 的 days 参数是从今天往前数的天数
+        interval: "daily"
+      },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+      }
+    });
+    console.log(`Chart response for ${coinId}:`, res.data);
+    const prices = res.data.prices?.map(item => item[1]) || [];
     if (!prices.length) return null;
     const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 800, height: 400 });
     const configuration = {
       type: "line",
-      data: { labels: prices.map((_, i) => `Day ${i + 1}`), datasets: [{ label: instId.split("-")[0], data: prices, borderColor: "rgb(75,192,192)", fill: false }] },
+      data: { labels: prices.map((_, i) => `Day ${i + 1}`), datasets: [{ label: coinId, data: prices, borderColor: "rgb(75,192,192)", fill: false }] },
       options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
     };
     const dataUrl = await chartJSNodeCanvas.renderToDataURL(configuration, "image/png");
     return dataUrl.replace(/^data:image\/png;base64,/, "");
-  } catch {
+  } catch (error) {
+    console.error(`Error fetching chart data for ${coinId}:`, error.message);
     return null;
   }
 }
@@ -61,20 +80,25 @@ async function getChartBase64(instId, days = 7) {
   try {
     let totalValue = 0, alert = "", coreLines = [], rotationData = [];
 
-    // 获取价格
+    // 批量获取价格
+    const tickers = await getTickers(allCoins);
+
+    // 处理价格数据
     for (let instId of allCoins) {
-      const ticker = await getTicker(instId);
-      // if (!ticker) continue; // 忽略非活跃或请求失败的合约
-      const arrow = ticker.change >= 0 ? "🔺" : "🔻";
-      const line = `${instId.split("-")[0]} $${ticker.lastPrice.toFixed(2)} ${arrow} ${ticker.change.toFixed(2)}%`;
+      const data = tickers[instId];
+      if (!data) continue; // 忽略请求失败的币
+      const lastPrice = data.usd;
+      const change = data.usd_24h_change;
+      const arrow = change >= 0 ? "🔺" : "🔻";
+      const line = `${instId} $${lastPrice.toFixed(2)} ${arrow} ${change.toFixed(2)}%`;
 
       if (coreCoins.includes(instId)) {
         coreLines.push(line);
-        if (Math.abs(ticker.change) >= 5) alert += `⚠ ${instId} 核心币波动超过5%\n`;
-        if (holdings[instId]) totalValue += holdings[instId] * ticker.lastPrice;
+        if (Math.abs(change) >= 5) alert += `⚠ ${instId} 核心币波动超过5%\n`;
+        if (holdings[instId]) totalValue += holdings[instId] * lastPrice;
       }
 
-      if (rotationCoins.includes(instId)) rotationData.push({ ...ticker, line });
+      if (rotationCoins.includes(instId)) rotationData.push({ instId, lastPrice, change, line });
     }
 
     // 排序Top3轮动币
@@ -89,17 +113,10 @@ async function getChartBase64(instId, days = 7) {
       rotationCharts.push({
         tag: "img",
         img_key: coin.instId,
-        alt: `${coin.instId.split("-")[0]} 7D Chart`,
+        alt: `${coin.instId} 7D Chart`,
         img_url: `data:image/png;base64,${chartBase64}`
       });
     }
-
-    // BTC资金费率
-    let fundingRate = 0;
-    try {
-      const frRes = await axios.get("https://www.okx.com/api/v5/public/funding-rate", { params: { instId: "BTC-USDT-SWAP" } });
-      fundingRate = parseFloat(frRes.data.data?.[0]?.fundingRate || 0) * 100;
-    } catch {}
 
     // 构建元素
     const elements = [
@@ -109,7 +126,6 @@ async function getChartBase64(instId, days = 7) {
       ...rotationCharts,
       { tag: "hr" },
       { tag: "div", text: { tag: "lark_md", content: `💰 持仓总价值: $${totalValue.toFixed(2)}` } },
-      { tag: "div", text: { tag: "lark_md", content: `📈 BTC 资金费率: ${fundingRate.toFixed(4)}%` } },
       { tag: "div", text: { tag: "lark_md", content: alert || "✅ 波动正常" } }
     ];
 
@@ -128,8 +144,16 @@ async function getChartBase64(instId, days = 7) {
     };
 
     // 发送飞书
-    const response = await axios.post(webhook, JSON.stringify(body), { headers: { "Content-Type": "application/json; charset=utf-8" } });
-    console.log("Feishu response:", response.data);
+    if (webhook) {
+      const response = await axios.post(webhook, JSON.stringify(body), { headers: { "Content-Type": "application/json; charset=utf-8" } });
+      console.log("Feishu response:", response.data);
+    } else {
+      console.log("Webhook not set, skipping Feishu message sending");
+      console.log("Core coins:", coreLines);
+      console.log("Top rotation coins:", topRotation.map(c => c.line));
+      console.log("Total value:", totalValue.toFixed(2));
+      console.log("Alert:", alert || "No alerts");
+    }
 
   } catch (err) {
     if (err.response) console.error("Feishu error:", err.response.data);
