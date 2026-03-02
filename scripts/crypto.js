@@ -185,9 +185,9 @@ async function getChartBase64(coinId, days = 7) {
 
     // 构建元素
     const elements = [
-      { tag: "div", text: { tag: "lark_md", content: "🔵 **核心监控池**\n" + coreLines.join("\n") } },
+      { tag: "div", text: { tag: "lark_md", content: "🔵 **核心监控池** (24小时涨跌幅)\n" + coreLines.join("\n") } },
       { tag: "hr" },
-      { tag: "div", text: { tag: "lark_md", content: "🟣 **轮动Top3池**\n" + topRotation.map(c => c.line).join("\n") } },
+      { tag: "div", text: { tag: "lark_md", content: "🟣 **轮动Top3池** (24小时涨跌幅)\n" + topRotation.map(c => c.line).join("\n") } },
       { tag: "hr" },
       { tag: "div", text: { tag: "lark_md", content: `💰 持仓总价值: $${totalValue.toFixed(2)}` } },
       { tag: "div", text: { tag: "lark_md", content: btcFundingRate ? `⚖️ BTC 资金费率: ${(parseFloat(btcFundingRate) * 100).toFixed(4)}%` : "⚖️ BTC 资金费率: 数据获取失败" } },
