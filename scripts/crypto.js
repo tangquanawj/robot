@@ -68,6 +68,47 @@ async function getTickers(coinIds) {
   }
 }
 
+// 获取 BTC 资金费率
+async function getBTCFundingRate() {
+  try {
+    console.log("Fetching BTC funding rate");
+    // 使用 Binance API 获取 BTC/USDT 永续合约的资金费率
+    const res = await axios.get("https://fapi.binance.com/fapi/v1/fundingRate", {
+      params: {
+        symbol: "BTCUSDT",
+        limit: 1
+      }
+    });
+    console.log("BTC funding rate response:", res.data);
+    if (res.data && res.data.length > 0) {
+      return res.data[0].fundingRate;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching BTC funding rate:", error.message);
+    return null;
+  }
+}
+
+// 获取恐慌指数
+async function getFearAndGreedIndex() {
+  try {
+    console.log("Fetching fear and greed index");
+    const res = await axios.get("https://api.alternative.me/fng/");
+    console.log("Fear and greed index response:", res.data);
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      return {
+        value: res.data.data[0].value,
+        value_classification: res.data.data[0].value_classification
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching fear and greed index:", error.message);
+    return null;
+  }
+}
+
 // 获取 CoinGecko 7 日 K 线价格 Base64
 async function getChartBase64(coinId, days = 7) {
   try {
@@ -105,6 +146,12 @@ async function getChartBase64(coinId, days = 7) {
 
     // 批量获取价格
     const tickers = await getTickers(allCoins);
+    
+    // 获取 BTC 资金费率
+    const btcFundingRate = await getBTCFundingRate();
+    
+    // 获取恐慌指数
+    const fearAndGreed = await getFearAndGreedIndex();
 
     // 处理价格数据
     for (let instId of allCoins) {
@@ -139,6 +186,8 @@ async function getChartBase64(coinId, days = 7) {
       { tag: "div", text: { tag: "lark_md", content: "🟣 **轮动Top3池**\n" + topRotation.map(c => c.line).join("\n") } },
       { tag: "hr" },
       { tag: "div", text: { tag: "lark_md", content: `💰 持仓总价值: $${totalValue.toFixed(2)}` } },
+      { tag: "div", text: { tag: "lark_md", content: btcFundingRate ? `⚖️ BTC 资金费率: ${(parseFloat(btcFundingRate) * 100).toFixed(4)}%` : "⚖️ BTC 资金费率: 数据获取失败" } },
+      { tag: "div", text: { tag: "lark_md", content: fearAndGreed ? `😨 恐慌指数: ${fearAndGreed.value} (${fearAndGreed.value_classification})` : "😨 恐慌指数: 数据获取失败" } },
       { tag: "div", text: { tag: "lark_md", content: alert || "✅ 波动正常" } }
     ];
 
