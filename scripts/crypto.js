@@ -72,23 +72,23 @@ async function getTickers(coinIds) {
 async function getBTCFundingRate() {
   try {
     console.log("Fetching BTC funding rate");
-    // 使用 Binance API 获取 BTC/USDT 永续合约的资金费率
-    const res = await axios.get("https://fapi.binance.com/fapi/v1/fundingRate", {
+    // 使用 OKX API 获取 BTC/USDT 永续合约的资金费率
+    const res = await axios.get("https://www.okx.com/api/v5/public/funding-rate", {
       params: {
-        symbol: "BTCUSDT",
+        instId: "BTC-USDT-SWAP",
         limit: 1
       }
     });
     console.log("BTC funding rate response:", res.data);
-    if (res.data && res.data.length > 0) {
-      return res.data[0].fundingRate;
+    if (res.data && res.data.data && res.data.data.length > 0) {
+      return res.data.data[0].fundingRate;
     }
     return null;
   } catch (error) {
     console.error("Error fetching BTC funding rate:", error.message);
-    // 当遇到 451 错误时，返回一个明确的错误信息
-    if (error.response && error.response.status === 451) {
-      console.error("Binance API is unavailable for legal reasons. Skipping BTC funding rate.");
+    // 当遇到错误时，返回一个明确的错误信息
+    if (error.response) {
+      console.error("OKX API error response:", error.response.data);
     }
     return null;
   }
