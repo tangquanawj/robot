@@ -14,7 +14,12 @@ const holdings = {
 // ====== 工具函数 ======
 function fetch(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+    const options = {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    };
+    https.get(url, options, (res) => {
       let data = "";
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => resolve(JSON.parse(data)));
