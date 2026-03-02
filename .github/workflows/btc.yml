@@ -15,30 +15,40 @@ jobs:
         run: |
           RESPONSE=$(curl -s "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd")
 
-          BTC=$(echo $RESPONSE | jq .bitcoin.usd)
-          ETH=$(echo $RESPONSE | jq .ethereum.usd)
-          SOL=$(echo $RESPONSE | jq .solana.usd)
+          BTC=$(echo $RESPONSE | jq -r .bitcoin.usd)
+          ETH=$(echo $RESPONSE | jq -r .ethereum.usd)
+          SOL=$(echo $RESPONSE | jq -r .solana.usd)
 
           echo "btc=$BTC" >> $GITHUB_OUTPUT
           echo "eth=$ETH" >> $GITHUB_OUTPUT
           echo "sol=$SOL" >> $GITHUB_OUTPUT
 
-      - name: Send to Feishu (With Sign)
+      - name: Send to Feishu (Signed)
         run: |
           TIMESTAMP=$(date +%s)
-          STRING_TO_SIGN="${TIMESTAMP}\n${FEISHU_SECRET}"
-          SIGN=$(echo -n "$STRING_TO_SIGN" | openssl dgst -sha256 -hmac "$FEISHU_SECRET" -binary | base64)
 
-          curl -X POST $FEISHU_WEBHOOK \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"timestamp\":\"$TIMESTAMP\",
-            \"sign\":\"$SIGN\",
-            \"msg_type\":\"text\",
-            \"content\":{
-              \"text\":\"📊 实时币价\nBTC: \$${{ steps.prices.outputs.btc }}\nETH: \$${{ steps.prices.outputs.eth }}\nSOL: \$${{ steps.prices.outputs.sol }}\"
-            }
-          }"
+          # 飞书要求：timestamp + 换行 + secret
+          STRING_TO_SIGN="$TIMESTAMP
+$FEISHU_SECRET"
+
+          # 计算 HMAC-SHA256 签名
+          SIGN=$(printf "%s" "$STRING_TO_SIGN" | \
+            openssl dgst -sha256 -hmac "$FEISHU_SECRET" -binary | base64 | tr -d '\n')
+
+          echo "Sending request..."
+
+          curl -s -X POST "$FEISHU_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"timestamp\":\"$TIMESTAMP\",
+              \"sign\":\"$SIGN\",
+              \"msg_type\":\"text\",
+              \"content\":{
+                \"text\":\"📊 实时币价\nBTC: \$${{ steps.prices.outputs.btc }}\nETH: \$${{ steps.prices.outputs.eth }}\nSOL: \$${{ steps.prices.outputs.sol }}\"
+              }
+            }"
+
+          echo "Done."
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
