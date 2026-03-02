@@ -120,14 +120,16 @@ async function generateChart(prices) {
     const prices = chartRes.data.prices.map(p => p[1]);
     await generateChart(prices);
 
-    // ===== Binance 资金费率 =====
-    const fundingRes = await axios.get(
-      "https://fapi.binance.com/fapi/v1/premiumIndex",
-      { params: { symbol: "BTCUSDT" } }
+    // ===== OKX 资金费率 =====
+    const okxRes = await axios.get(
+      "https://www.okx.com/api/v5/public/funding-rate",
+      {
+        params: { instId: "BTC-USDT-SWAP" }
+      }
     );
 
     const fundingRate =
-      parseFloat(fundingRes.data.lastFundingRate) * 100;
+      parseFloat(okxRes.data.data[0].fundingRate) * 100;
 
     /* ======================
        分组处理
