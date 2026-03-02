@@ -1,52 +1,72 @@
-- name: Send to Feishu (Correct Official Sign)
-  run: |
-    node <<EOF
-    const crypto = require('crypto');
-    const https = require('https');
+name: BTC Push
 
-    const webhook = process.env.FEISHU_WEBHOOK;
-    const secret = process.env.FEISHU_SECRET;
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
-    const timestamp = Math.floor(Date.now() / 1000).toString();
+jobs:
+  push:
+    runs-on: ubuntu-latest
 
-    // 官方算法：timestamp + "\n" + secret
-    const stringToSign = `${timestamp}\n${secret}`;
+    steps:
+      - name: Get BTC Price
+        id: price
+        run: |
+          RESPONSE=$(curl -s "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+          BTC=$(echo "$RESPONSE" | jq -r '.bitcoin.usd')
+          echo "btc=$BTC" >> $GITHUB_OUTPUT
 
-    // ⚠️ 关键：stringToSign 作为 key，message 是空字符串
-    const sign = crypto
-      .createHmac('sha256', stringToSign)
-      .update('')
-      .digest('base64');
+      - name: Send to Feishu
+        run: |
+          node <<'EOF'
+          const crypto = require('crypto');
+          const https = require('https');
 
-    const data = JSON.stringify({
-      timestamp,
-      sign,
-      msg_type: "text",
-      content: {
-        text: "🚀 官方算法测试成功"
-      }
-    });
+          const webhook = process.env.FEISHU_WEBHOOK;
+          const secret = process.env.FEISHU_SECRET;
+          const btc = process.env.BTC;
 
-    const url = new URL(webhook);
+          const timestamp = Math.floor(Date.now() / 1000).toString();
 
-    const options = {
-      hostname: url.hostname,
-      path: url.pathname + url.search,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(data)
-      }
-    };
+          // 官方算法
+          const stringToSign = `${timestamp}\n${secret}`;
 
-    const req = https.request(options, res => {
-      res.on('data', d => process.stdout.write(d));
-    });
+          const sign = crypto
+            .createHmac('sha256', stringToSign)
+            .update('')
+            .digest('base64');
 
-    req.on('error', error => console.error(error));
-    req.write(data);
-    req.end();
-    EOF
-  env:
-    FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
-    FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          const body = JSON.stringify({
+            timestamp: timestamp,
+            sign: sign,
+            msg_type: "text",
+            content: {
+              text: `📊 BTC 实时价格\nBTC: $${btc}`
+            }
+          });
+
+          const url = new URL(webhook);
+
+          const options = {
+            hostname: url.hostname,
+            path: url.pathname + url.search,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(body)
+            }
+          };
+
+          const req = https.request(options, res => {
+            res.on('data', d => process.stdout.write(d));
+          });
+
+          req.on('error', error => console.error(error));
+          req.write(body);
+          req.end();
+          EOF
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          BTC: ${{ steps.price.outputs.btc }}
