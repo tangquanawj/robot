@@ -17,6 +17,7 @@ const coinSymbols = {
   "chainlink": "LINK",
   "avalanche": "AVAX",
   "polkadot": "DOT",
+  "uniswap": "UNI",
   "near": "NEAR",
   "arbitrum": "ARB",
   "aptos": "APT",
@@ -30,7 +31,7 @@ const coinSymbols = {
 };
 
 // 核心币池和轮动币池
-const coreCoins = ["bitcoin", "ethereum", "ripple", "solana", "dogecoin", "cardano", "chainlink", "avalanche", "polkadot"];
+const coreCoins = ["bitcoin", "ethereum", "ripple", "solana", "dogecoin", "cardano", "chainlink", "avalanche", "polkadot", "uniswap"];
 const rotationCoins = ["sui", "near", "aptos", "render-token", "arbitrum", "fetch-ai", "injective", "optimism", "polygon", "cosmos"];
 const allCoins = [...coreCoins, ...rotationCoins];
 
