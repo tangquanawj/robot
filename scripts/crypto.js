@@ -169,8 +169,9 @@ async function getChartBase64(coinId, days = 7) {
       const lastPrice = data.usd;
       const change = data.usd_24h_change;
       const arrow = change >= 0 ? "↑" : "↓";
+      const color = change >= 0 ? "green" : "red";
       const symbol = coinSymbols[instId] || instId;
-      const line = `${symbol} $${lastPrice.toFixed(2)} ${arrow} ${change.toFixed(2)}%`;
+      const line = `${symbol} $${lastPrice.toFixed(2)} <font color="${color}">${arrow} ${change.toFixed(2)}%</font>`;
 
       if (coreCoins.includes(instId)) {
         coreLines.push(line);
