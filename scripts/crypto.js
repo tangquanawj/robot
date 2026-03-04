@@ -168,7 +168,7 @@ async function getChartBase64(coinId, days = 7) {
       if (!data) continue; // 忽略请求失败的币
       const lastPrice = data.usd;
       const change = data.usd_24h_change;
-      const arrow = change >= 0 ? "�" : "�";
+      const arrow = change >= 0 ? "↑" : "↓";
       const symbol = coinSymbols[instId] || instId;
       const line = `${symbol} $${lastPrice.toFixed(2)} ${arrow} ${change.toFixed(2)}%`;
 
